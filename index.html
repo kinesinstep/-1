@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뇌신경 해부도 퀴즈 퍼즐</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .game-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1000px;
+            width: 100%;
+        }
+        /* 왼쪽: 해부도 영역 */
+        .map-section {
+            position: relative;
+            width: 65%;
+            background: #f4f4f5;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .map-section img {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+        /* 뇌신경 드롭 위치 (정답을 놓을 동그라미) */
+        .drop-zone {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 2px dashed #a8a8eb;
+            color: #555;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 13px;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        .drop-zone.drag-over {
+            background-color: #e2e2ff;
+            border-color: #6200ee;
+        }
+        /* 정답을 맞췄을 때의 스타일 */
+        .drop-zone.correct {
+            background-color: #e6f4ea;
+            border-color: #1e8e3e;
+            color: #1e8e3e;
+            width: auto;
+            height: auto;
+            padding: 6px 12px;
+            border-radius: 16px;
+            border-style: solid;
+            font-size: 14px;
+        }
+        /* 오른쪽: 블록 및 점수 영역 */
+        .blocks-section {
+            width: 35%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .score-board {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .bg-green { background-color: #e6f4ea; color: #1e8e3e; }
+        .bg-red { background-color: #fce8e6; color: #d93025; }
+        .bg-gray { background-color: #f1f3f4; color: #5f6368; }
+        
+        /* 드래그 가능한 신경 블록 */
+        .draggable-block {
+            background: white;
+            padding: 12px 16px;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 14px;
+            color: #3c4043;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .draggable-block:hover {
+            border-color: #d2e3fc;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .draggable-block:active {
+            cursor: grabbing;
+            border-color: #a8c7fa;
+            border-width: 2px;
+            padding: 11px 15px; /* 테두리 굵기 보정 */
+        }
+        .draggable-block.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="map-section">
+        <img src="brainpic.png" alt="뇌 해부도">
+
+        <div class="drop-zone" data-id="1" style="top: 15%; left: 50%;">I</div>
+        <div class="drop-zone" data-id="2" style="top: 35%; left: 50%;">II</div>
+        <div class="drop-zone" data-id="3" style="top: 50%; left: 45%;">III</div>
+        <div class="drop-zone" data-id="4" style="top: 50%; left: 55%;">IV</div>
+        <div class="drop-zone" data-id="5" style="top: 55%; left: 40%;">V</div>
+        <div class="drop-zone" data-id="6" style="top: 55%; left: 60%;">VI</div>
+        <div class="drop-zone" data-id="7" style="top: 62%; left: 38%;">VII</div>
+        <div class="drop-zone" data-id="8" style="top: 62%; left: 62%;">VIII</div>
+        <div class="drop-zone" data-id="9" style="top: 70%; left: 40%;">IX</div>
+        <div class="drop-zone" data-id="10" style="top: 70%; left: 60%;">X</div>
+        <div class="drop-zone" data-id="11" style="top: 78%; left: 50%;">XI</div>
+        <div class="drop-zone" data-id="12" style="top: 85%; left: 50%;">XII</div>
+    </div>
+
+    <div class="blocks-section">
+        <div class="score-board">
+            <span class="badge bg-green">✓ <span id="correct-count">0</span> 정답</span>
+            <span class="badge bg-red">✗ <span id="wrong-count">0</span> 오답</span>
+            <span class="badge bg-gray"><span id="left-count">12</span> 남음</span>
+        </div>
+
+        <div id="blocks-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <div class="draggable-block" draggable="true" data-id="10">X 미주신경</div>
+            <div class="draggable-block" draggable="true" data-id="1">I 후각신경</div>
+            <div class="draggable-block" draggable="true" data-id="12">XII 설하신경</div>
+            <div class="draggable-block" draggable="true" data-id="5">V 삼차신경</div>
+            <div class="draggable-block" draggable="true" data-id="8">VIII 청각진정신경</div>
+            <div class="draggable-block" draggable="true" data-id="4">IV 활차신경</div>
+            <div class="draggable-block" draggable="true" data-id="11">XI 부신경</div>
+            <div class="draggable-block" draggable="true" data-id="9">IX 설인신경</div>
+            <div class="draggable-block" draggable="true" data-id="2">II 시신경</div>
+            <div class="draggable-block" draggable="true" data-id="7">VII 안면신경</div>
+            <div class="draggable-block" draggable="true" data-id="6">VI 외전신경</div>
+            <div class="draggable-block" draggable="true" data-id="3">III 동안신경</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const draggables = document.querySelectorAll('.draggable-block');
+    const dropZones = document.querySelectorAll('.drop-zone');
+
+    let correctCount = 0;
+    let wrongCount = 0;
+    let leftCount = 12;
+
+    const correctEl = document.getElementById('correct-count');
+    const wrongEl = document.getElementById('wrong-count');
+    const leftEl = document.getElementById('left-count');
+
+    // 1. 드래그 시작 이벤트
+    draggables.forEach(draggable => {
+        draggable.addEventListener('dragstart', (e) => {
+            // 드래그하는 요소의 ID와 이름을 저장
+            e.dataTransfer.setData('text/plain', draggable.dataset.id);
+            e.dataTransfer.setData('text/name', draggable.innerText);
+        });
+    });
+
+    // 2. 드롭 존 설정
+    dropZones.forEach(zone => {
+        // 드래그 요소가 드롭 존 위에 있을 때
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault(); // 기본 이벤트를 막아야 drop이 가능함
+            if (!zone.classList.contains('correct')) {
+                zone.classList.add('drag-over');
+            }
+        });
+
+        // 드래그 요소가 드롭 존을 벗어날 때
+        zone.addEventListener('dragleave', () => {
+            zone.classList.remove('drag-over');
+        });
+
+        // 요소를 놓았을 때 (드롭)
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const draggedName = e.dataTransfer.getData('text/name');
+            const targetId = zone.dataset.id;
+
+            // 이미 정답이 채워진 곳이면 무시
+            if (zone.classList.contains('correct')) return;
+
+            // 정답 검사
+            if (draggedId === targetId) {
+                // 🟢 정답일 경우
+                zone.classList.add('correct');
+                zone.innerText = draggedName;
+
+                // 오른쪽 리스트에서 해당 블록 숨기기
+                const blockToHide = document.querySelector(`.draggable-block[data-id="${draggedId}"]`);
+                if (blockToHide) blockToHide.classList.add('hidden');
+
+                // 스코어 업데이트
+                correctCount++;
+                leftCount--;
+                correctEl.innerText = correctCount;
+                leftEl.innerText = leftCount;
+
+                if (leftCount === 0) {
+                    setTimeout(() => alert("축하합니다! 12쌍의 뇌신경 구조를 모두 정확히 매칭하셨습니다."), 300);
+                }
+            } else {
+                // 🔴 오답일 경우
+                wrongCount++;
+                wrongEl.innerText = wrongCount;
+                
+                // 틀린 신경의 번호에 따라 해부학적 힌트 제공
+                alert(`오답입니다! \n힌트: 방금 선택하신 [${draggedName}]이(가) 뇌간(Brainstem)의 어느 부위(중뇌, 뇌교, 연수)에서 기시하는지, 혹은 특수감각을 담당하는지 다시 한번 구조를 떠올려보세요!`);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
